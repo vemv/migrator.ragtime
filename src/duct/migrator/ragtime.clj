@@ -85,14 +85,19 @@
 (defmethod ig/resume-key :duct.migrator/ragtime [_ options _ index]
   (migrate index options))
 
-(defmethod ig/init-key ::sql [key {:keys [up down] :as opts}]
-  (-> (jdbc/sql-migration {:id   (:id opts (clean-key ::sql key))
-                           :up   (mapv get-string up)
-                           :down (mapv get-string down)})
-      (add-hash-to-id)))
+(defmethod ig/init-key ::sql [key {:keys [up down add-hash-to-id?] :as opts
+                                   :or {add-hash-to-id? true}}]
+  (cond-> (jdbc/sql-migration {:id   (:id opts (clean-key ::sql key))
+                               :up   (mapv get-string up)
+                               :down (mapv get-string down)})
+    add-hash-to-id? (add-hash-to-id)))
 
-(defmethod ig/init-key ::resources [_ {:keys [path]}]
-  (->> (jdbc/load-resources path) (map add-hash-to-id)))
+(defmethod ig/init-key ::resources [_ {:keys [path add-hash-to-id?]
+                                       :or {add-hash-to-id? true}}]
+  (cond->> (jdbc/load-resources path)
+    add-hash-to-id? (map add-hash-to-id)))
 
-(defmethod ig/init-key ::directory [_ {:keys [path]}]
-  (->> (jdbc/load-directory path) (map add-hash-to-id)))
+(defmethod ig/init-key ::directory [_ {:keys [path add-hash-to-id?]
+                                       :or {add-hash-to-id? true}}]
+  (cond->> (jdbc/load-directory path)
+    add-hash-to-id? (map add-hash-to-id)))
